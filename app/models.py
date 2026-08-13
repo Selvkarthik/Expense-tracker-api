@@ -13,7 +13,7 @@ class User(Base):
     password_hash : Mapped[str] = mapped_column(String(255), nullable=False)
     created_at : Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     expenses : Mapped[list["Expense"]] = relationship(back_populates='user')
-    budgets = Mapped[list["Budget"]] = relationship(back_populates='budgets')
+    budgets : Mapped[list["Budget"]] = relationship(back_populates='user')
 
 class Expense(Base):
     __tablename__ = 'expenses'
@@ -27,7 +27,7 @@ class Expense(Base):
     category_id : Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False)
     created_at : Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     user : Mapped['User'] = relationship(back_populates='expenses')
-    category = Mapped['Category'] = relationship(back_populates='expenses')
+    category : Mapped['Category'] = relationship(back_populates='expenses')
 
 class Category(Base):
     __tablename__ = 'categories'
