@@ -11,9 +11,9 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 def authentication(db : db_dependency, form_data : OAuth2PasswordRequestForm = Depends()):
     user_data = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user_data:
-        raise HTTPException(status_code=401, detail='Invalid Username or Password')
+        raise HTTPException(status_code=401, detail='Invalid Username or Password.')
     if not verify_password(form_data.password, user_data.password_hash):
-        raise HTTPException(status_code=401, detail='Invalid Username or Password')
+        raise HTTPException(status_code=401, detail='Invalid Username or Password.')
     token = create_access_token({"sub" : str(user_data.id)})
     return {"access_token" : token,
             "token_type" : "bearer"}
