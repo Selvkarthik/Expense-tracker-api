@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 from pydantic import BaseModel, Field, ConfigDict
+from enum import Enum
 
 class UserCreate(BaseModel):
     username : str = Field(min_length=1, max_length=50) 
@@ -37,6 +38,7 @@ class ExpenseResponse(BaseModel):
     expense_date : date
     category_id : int
     created_at : datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class CategoryCreate(BaseModel):
     name : str = Field(min_length=1, max_length=50)
@@ -45,6 +47,7 @@ class CategoryResponse(BaseModel):
     id : int
     name : str
     created_at : datetime
+    model_config = ConfigDict(from_attributes=True)
 
 class BudgetCreate(BaseModel):
     month : int = Field(ge=1, le=12)
@@ -57,3 +60,14 @@ class BudgetResponse(BaseModel):
     year : int
     limit_amount : Decimal
     created_at : datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class ExpenseSortBy(str, Enum):
+    expense_date = "expense_date"
+    amount = "amount"
+    created_at = "created_at"
+    title = "title"
+
+class SortOrder(str, Enum):
+    asc = "asc"
+    desc = "desc"

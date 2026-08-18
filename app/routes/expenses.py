@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status, Query
 from .. import models, schemas
 from ..auth import get_current_user
 from ..dependencies import db_dependency
+from datetime import date
 
 router = APIRouter(prefix='/expenses', tags=['Expense'])
 
@@ -24,8 +25,41 @@ def create_expense(db : db_dependency, expense : schemas.ExpenseCreate, current_
     return expense_data
 
 @router.get('/', response_model=list[schemas.ExpenseResponse])
-def get_expenses(db : db_dependency, skip : int = Query(0, ge=0), limit : int = Query(10, ge=1, le=100), current_user = Depends(get_current_user)):
-    expense_data = db.query(models.Expense).filter(models.Expense.user_id == current_user.id).offset(skip).limit(limit).all()
+def get_expenses(
+    db : db_dependency, 
+    skip : int = Query(0, ge=0), 
+    limit : int = Query(10, ge=1, le=100),
+    category_id : int | None = Query(None, gt=0), 
+    start_date : date | None = Query(None),
+    end_date : date | None = Query(None),
+    sort_by : schemas.ExpenseSortBy = Query(schemas.ExpenseSortBy.expense_date),
+    sort_order : schemas.SortOrder = Query(schemas.SortOrder.desc),
+    current_user = Depends(get_current_user)
+    ):
+    sort_columns = {
+        schemas.ExpenseSortBy.expense_date : models.Expense.expense_date,
+        schemas.ExpenseSortBy.amount : models.Expense.amount,
+        schemas.ExpenseSortBy.created_at : models.Expense.created_at,
+        schemas.ExpenseSortBy.title : models.Expense.title
+    }
+    sort_column = sort_columns[sort_by]
+
+    query = db.query(models.Expense).filter(models.Expense.user_id == current_user.id)
+
+    if category_id is not None:
+        query = query.filter(models.Expense.category_id == category_id)
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(status_code=400, detail='Start date cannot be after end date')
+    if start_date:
+        query = query.filter(models.Expense.expense_date >= start_date)
+    if end_date:
+        query = query.filter(models.Expense.expense_date <= end_date)
+    if sort_order == schemas.SortOrder.asc:
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+        
+    expense_data = query.offset(skip).limit(limit).all()
     return expense_data
 
 @router.get('/{expense_id}', response_model=schemas.ExpenseResponse)

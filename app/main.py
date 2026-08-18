@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import auth, users, categories, expenses, budgets
+from .routes import auth, users, categories, expenses, budgets
 
 app = FastAPI(title='Expense Tracker API')
 
