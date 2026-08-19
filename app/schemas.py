@@ -62,6 +62,14 @@ class BudgetResponse(BaseModel):
     created_at : datetime
     model_config = ConfigDict(from_attributes=True)
 
+class BudgetSummaryResponse(BaseModel):
+    month : int
+    year : int
+    budget_limit : Decimal
+    total_spent : Decimal
+    remianing : Decimal
+    budget_exceeded : bool
+    exceeded_by : Decimal
 class ExpenseSortBy(str, Enum):
     expense_date = "expense_date"
     amount = "amount"

@@ -3,6 +3,8 @@ from .. import models, schemas
 from ..auth import get_current_user
 from ..dependencies import db_dependency
 from datetime import date
+import calendar
+from sqlalchemy import func
 
 router = APIRouter(prefix='/expenses', tags=['Expense'])
 
@@ -61,6 +63,42 @@ def get_expenses(
         
     expense_data = query.offset(skip).limit(limit).all()
     return expense_data
+
+@router.get('/summary')
+def get_expense_summary(
+    db : db_dependency,
+    month : int | None = Query(None, ge=1, le=12),
+    year : int | None = Query(None, ge=2000),
+    current_user = Depends(get_current_user)
+    ):
+
+    query = db.query(models.Expense).filter(models.Expense.user_id == current_user.id)
+
+    if month is not None:
+        if year is None:
+            year = date.today().year
+        start_date = date(year, month, 1)
+        last_day = calendar.monthrange(year, month)[1]
+        end_date =  date(year, month, last_day)
+
+        query = query.filter(models.Expense.expense_date >= start_date, models.Expense.expense_date <= end_date)
+
+    elif year is not None:
+        start_date = date(year, 1, 1)
+        end_date = date(year, 12, 31)
+
+        query = query.filter(models.Expense.expense_date >= start_date, models.Expense.expense_date <= end_date)
+
+    total = query.with_entities(func.sum(models.Expense.amount)).scalar()
+    count = query.with_entities(func.count(models.Expense.id)).scalar()
+    average = query.with_entities(func.avg(models.Expense.amount)).scalar()
+
+    return {
+        'total_expense ' : total or 0,
+        'expense_count' : count or 0,
+        'average_expense' : average or 0
+        }
+
 
 @router.get('/{expense_id}', response_model=schemas.ExpenseResponse)
 def get_expense_id(db : db_dependency, expense_id : int, current_user = Depends(get_current_user)):

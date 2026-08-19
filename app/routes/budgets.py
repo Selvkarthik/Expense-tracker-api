@@ -2,6 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from .. import models, schemas
 from ..dependencies import db_dependency
 from ..auth import get_current_user
+from sqlalchemy import func
+from datetime import date
+import calendar
 
 router = APIRouter(prefix='/budgets', tags=['Budgets'])
 
@@ -29,6 +32,40 @@ def create_budget(db : db_dependency, budget : schemas.BudgetCreate, current_use
 def get_budgets(db : db_dependency, skip : int = Query(0, ge=0), limit : int = Query(10, ge=1, le=100), current_user = Depends(get_current_user)):
     budget_data = db.query(models.Budget).filter(models.Budget.user_id == current_user.id).offset(skip).limit(limit).all()
     return budget_data
+
+@router.get('/{budget_id}/summary', response_model=schemas.BudgetSummaryResponse)
+def budget_summary(db : db_dependency, budget_id : int, current_user = Depends(get_current_user)):
+    budget_data = db.query(models.Budget).filter(models.Budget.id == budget_id, models.Budget.user_id == current_user.id).first()
+    if not budget_data:
+        raise HTTPException(status_code=404, detail='Budget data not Found.')
+
+    start_date = date(budget_data.year, budget_data.month, 1)
+    last_day = calendar.monthrange(budget_data.year, budget_data.month)[1]
+    end_date = date(budget_data.year, budget_data.month, last_day)
+
+    total_spent = db.query(func.sum(models.Expense.amount)).filter(
+        models.Expense.expense_date >= start_date,
+        models.Expense.expense_date <= end_date,
+        models.Expense.user_id == current_user.id
+    ).scalar()
+    total_spent = total_spent or 0
+    
+    remaining = budget_data.limit_amount - total_spent
+    budget_exceeded = total_spent > budget_data.limit_amount
+    if budget_exceeded:
+        exceeded_by = total_spent - budget_data.limit_amount
+    else:
+        exceeded_by = 0
+
+    return {
+        'month' : budget_data.month,
+        'year' : budget_data.year,
+        'budget_limit' : budget_data.limit_amount,
+        'total_spent' : total_spent,
+        'remaining' : remaining,
+        'budget_exceeded' : budget_exceeded,
+        'exceeded_by' : exceeded_by
+    }
 
 @router.get('/{budget_id}', response_model=schemas.BudgetResponse)
 def get_budget_id(db : db_dependency, budget_id : int, current_user = Depends(get_current_user)):
