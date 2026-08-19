@@ -67,7 +67,7 @@ class BudgetSummaryResponse(BaseModel):
     year : int
     budget_limit : Decimal
     total_spent : Decimal
-    remianing : Decimal
+    remaining : Decimal
     budget_exceeded : bool
     exceeded_by : Decimal
 class ExpenseSortBy(str, Enum):
@@ -79,3 +79,11 @@ class ExpenseSortBy(str, Enum):
 class SortOrder(str, Enum):
     asc = "asc"
     desc = "desc"
+
+class BudgetWarning(BaseModel):
+    exceeded : bool
+    exceeded_by : Decimal
+
+class ExpenseCreateResponse(BaseModel):
+    expense : ExpenseResponse
+    budget_warning : BudgetWarning | None = None

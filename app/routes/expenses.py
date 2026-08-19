@@ -8,11 +8,18 @@ from sqlalchemy import func
 
 router = APIRouter(prefix='/expenses', tags=['Expense'])
 
-@router.post('/', response_model=schemas.ExpenseResponse, status_code=status.HTTP_201_CREATED)
+@router.post('/', response_model=schemas.ExpenseCreateResponse, status_code=status.HTTP_201_CREATED)
 def create_expense(db : db_dependency, expense : schemas.ExpenseCreate, current_user = Depends(get_current_user)):
     category_data = db.query(models.Category).filter(models.Category.id == expense.category_id).first()
     if not category_data:
         raise HTTPException(status_code=404, detail='Category does not exist.')
+    
+    budget_data = db.query(models.Budget).filter(
+        models.Budget.user_id == current_user.id,
+        models.Budget.month == expense.expense_date.month,
+        models.Budget.year == expense.expense_date.year
+    ).first()
+
     expense_data = models.Expense(
         title = expense.title,
         amount = expense.amount,
@@ -24,7 +31,30 @@ def create_expense(db : db_dependency, expense : schemas.ExpenseCreate, current_
     db.add(expense_data)
     db.commit()
     db.refresh(expense_data)
-    return expense_data
+
+    budget_warning = None
+
+    if budget_data:
+        start_date = date(budget_data.year, budget_data.month, 1)
+        last_day = calendar.monthrange(budget_data.year, budget_data.month)[1]
+        end_date = date(budget_data.year, budget_data.month, last_day)
+
+        total_spent = db.query(func.sum(models.Expense.amount)).filter(
+            models.Expense.user_id == current_user.id,
+            models.Expense.expense_date >= start_date,
+            models.Expense.expense_date <= end_date
+        ).scalar()
+
+        total_spent = total_spent or 0
+        budget_exceeded = total_spent > budget_data.limit_amount
+        if budget_exceeded:
+            exceeded_by = total_spent - budget_data.limit_amount
+        else:
+            exceeded_by = 0
+
+        budget_warning = schemas.BudgetWarning(exceeded=budget_exceeded, exceeded_by=exceeded_by)
+
+    return {'expense' : expense_data, 'budget_warning' : budget_warning}
 
 @router.get('/', response_model=list[schemas.ExpenseResponse])
 def get_expenses(
