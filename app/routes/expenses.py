@@ -5,6 +5,7 @@ from ..dependencies import db_dependency
 from datetime import date
 import calendar
 from sqlalchemy import func
+from decimal import Decimal
 
 router = APIRouter(prefix='/expenses', tags=['Expense'])
 
@@ -50,7 +51,7 @@ def create_expense(db : db_dependency, expense : schemas.ExpenseCreate, current_
         if budget_exceeded:
             exceeded_by = total_spent - budget_data.limit_amount
         else:
-            exceeded_by = 0
+            exceeded_by = Decimal("0")
 
         budget_warning = schemas.BudgetWarning(exceeded=budget_exceeded, exceeded_by=exceeded_by)
 
@@ -124,7 +125,7 @@ def get_expense_summary(
     average = query.with_entities(func.avg(models.Expense.amount)).scalar()
 
     return {
-        'total_expense ' : total or 0,
+        'total_expense' : total or 0,
         'expense_count' : count or 0,
         'average_expense' : average or 0
         }
@@ -142,6 +143,9 @@ def update_expense(db : db_dependency, expense_id : int, expense : schemas.Expen
     expense_data = db.query(models.Expense).filter(models.Expense.id == expense_id, models.Expense.user_id == current_user.id).first()
     if not expense_data:
         raise HTTPException(status_code=404, detail='Expense Does not exist.')
+    category_data = db.query(models.Category).filter(models.Category.id == expense.category_id).first()
+    if not category_data:
+        raise HTTPException(status_code=404, detail='Category does not exist.')
     expense_data.title = expense.title
     expense_data.amount = expense.amount
     expense_data.description = expense.description

@@ -31,6 +31,9 @@ def get_category_id(db : db_dependency, category_id : int):
 
 @router.put('/{category_id}', response_model=schemas.CategoryResponse)
 def update_category(db : db_dependency, category_id : int, category_change : schemas.CategoryCreate):
+    existing_category = db.query(models.Category).filter(models.Category.name == category_change.name, models.Category.id != category_change).first()
+    if existing_category:
+        raise HTTPException(status_code=409, detail="Category already exists.")
     category_data = db.query(models.Category).filter(models.Category.id == category_id).first()
     if not category_data:
         raise HTTPException(status_code=404, detail='Category does not Exist.')
