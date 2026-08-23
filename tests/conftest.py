@@ -52,3 +52,60 @@ def client(db_session):
         yield test_client
 
     app.dependency_overrides.clear()
+
+@pytest.fixture
+def test_user(client):
+    data = {
+        "username" : "testuser",
+        "email" : "test@example.com",
+        "password" : "TestPassword123"
+    }
+    response = client.post('/users/', json=data)
+
+    assert response.status_code == 201
+
+    return response.json()
+
+@pytest.fixture
+def auth_headers(client, test_user):
+    data = {
+        "username" : test_user["username"],
+        "password" : "TestPassword123"
+    }
+    response = client.post("/auth/login", data = data)
+
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    return {
+        "Authorization" : f"Bearer {token}"
+    }
+
+@pytest.fixture
+def test_category(client):
+    response = client.post("/categories/", json = {"name" : "Food"})
+    assert response.status_code == 201
+    return response.json()
+
+@pytest.fixture
+def test_expenses(client, auth_headers, test_category):
+    cat_id = test_category["id"]
+    response = client.post("/expenses/", headers=auth_headers,
+                               json = {
+                                   "title" : "Dinner",
+                                   "amount" : "100",
+                                   "description" : "Dinner",
+                                   "expense_date" : "2026-08-11",
+                                   "category_id" : cat_id
+                               })
+    assert response.status_code == 201
+    return response.json()
+@pytest.fixture
+def test_budgets(client, auth_headers):
+    response = client.post('/budgets/', headers=auth_headers,
+                           json={
+                               "month" : 8,
+                               "year" : 2026,
+                               "limit_amount" : "25000"
+                           })
+    assert response.status_code == 201
+    return response.json()

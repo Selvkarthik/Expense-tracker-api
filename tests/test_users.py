@@ -92,6 +92,10 @@ def test_update_user(client):
     assert data["username"] == "updateuser"
     assert data["email"] == "updated@example.com"
 
+    response1 = client.put('/users/23', json={'username' : 'updateuser', 'email' : 'update@example.com'})
+    assert response1.status_code == 404
+    assert response1.json()['detail'] == 'User Not Found.'
+
 def test_delete_user(client):
     create_response = client.post("/users/",
                                           json = {
@@ -104,3 +108,7 @@ def test_delete_user(client):
     response = client.delete(f"/users/{user_id}")
     assert response.status_code == 200
     assert response.json()["Message"] == "User data deleted successfully."
+
+    response1 = client.delete('/users/23')
+    assert response1.status_code == 404
+    assert response1.json()['detail'] == 'User Not Found.'
