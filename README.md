@@ -2,7 +2,7 @@
 
 A production-style REST API for managing personal expenses, categories, monthly budgets, and spending summaries.
 
-Built with **FastAPI, PostgreSQL, SQLAlchemy, JWT authentication, and Alembic**.
+Built with **FastAPI, PostgreSQL, SQLAlchemy, JWT authentication, Alembic, Docker, and Pytest**.
 
 ---
 
@@ -11,7 +11,7 @@ Built with **FastAPI, PostgreSQL, SQLAlchemy, JWT authentication, and Alembic**.
 - JWT-based authentication
 - OAuth2 password authentication
 - Secure password hashing with bcrypt
-- User management
+- User registration and management
 - Category management
 - Expense management
 - Monthly budget management
@@ -24,6 +24,8 @@ Built with **FastAPI, PostgreSQL, SQLAlchemy, JWT authentication, and Alembic**.
 - User-level data isolation
 - PostgreSQL database
 - Alembic database migrations
+- Dockerized application
+- Docker Compose multi-container setup
 - Automated testing with Pytest
 - **59 automated tests**
 - **98% code coverage**
@@ -42,6 +44,8 @@ Built with **FastAPI, PostgreSQL, SQLAlchemy, JWT authentication, and Alembic**.
 | Pydantic | Data validation |
 | JWT / OAuth2 | Authentication |
 | bcrypt | Password hashing |
+| Docker | Application containerization |
+| Docker Compose | Multi-container development environment |
 | Pytest | Automated testing |
 | pytest-cov | Test coverage |
 | Uvicorn | ASGI server |
@@ -82,9 +86,12 @@ expense-tracker-api/
 │   ├── test_budgets.py
 │   └── test_setup.py
 │
+├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── alembic.ini
+├── docker-compose.yml
+├── Dockerfile
 ├── requirements.txt
 └── README.md
 ```
@@ -152,9 +159,7 @@ This project uses **PostgreSQL** with **SQLAlchemy**.
 
 Make sure PostgreSQL is installed and running before starting the application.
 
-The database schema is managed using **Alembic migrations**.
-
-Apply the latest migrations:
+Apply the database migrations:
 
 ```bash
 alembic upgrade head
@@ -166,7 +171,7 @@ Check the current migration:
 alembic current
 ```
 
-Check migration history:
+View migration history:
 
 ```bash
 alembic history
@@ -174,7 +179,69 @@ alembic history
 
 ---
 
-# ▶️ Running the API
+# 🐳 Docker
+
+The application is containerized using **Docker and Docker Compose**.
+
+The Docker setup includes:
+
+- FastAPI application container
+- PostgreSQL database container
+- Persistent PostgreSQL volume
+- Environment-based configuration
+- Alembic migration support
+
+### Start the application
+
+```bash
+docker compose up --build
+```
+
+The API will be available at:
+
+```text
+http://localhost:8000
+```
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+### Stop the containers
+
+```bash
+docker compose down
+```
+
+### Run the application in the background
+
+```bash
+docker compose up -d --build
+```
+
+### View running containers
+
+```bash
+docker compose ps
+```
+
+### View API logs
+
+```bash
+docker compose logs api
+```
+
+### View database logs
+
+```bash
+docker compose logs db
+```
+
+---
+
+# ▶️ Running Without Docker
 
 Start the development server:
 
@@ -188,7 +255,7 @@ The API will be available at:
 http://127.0.0.1:8000
 ```
 
-## Interactive API Documentation
+### Interactive API Documentation
 
 Swagger UI:
 
@@ -210,7 +277,6 @@ http://127.0.0.1:8000/redoc
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/auth/register` | Register a new user |
 | POST | `/auth/login` | Login and receive JWT |
 | GET | `/auth/me` | Get current authenticated user |
 
@@ -228,12 +294,15 @@ Authorization: Bearer <access_token>
 
 | Method | Endpoint | Description |
 |---|---|---|
+| POST | `/users/` | Register a new user |
 | GET | `/users/` | Get users |
 | GET | `/users/{user_id}` | Get user by ID |
 | PUT | `/users/{user_id}` | Update user |
 | DELETE | `/users/{user_id}` | Delete user |
 
-User-specific resources are protected using authenticated ownership checks.
+User registration is handled through the `/users/` endpoint.
+
+User-specific resources are protected using authenticated ownership checks where applicable.
 
 ---
 
@@ -357,6 +426,14 @@ Each user can have a budget for a specific month and year.
 
 Duplicate budgets for the same user, month, and year are prevented.
 
+Budget summaries include:
+
+- Budget limit
+- Total spending
+- Remaining amount
+- Whether the budget was exceeded
+- Amount exceeded
+
 ---
 
 # ⚠️ Budget Warnings
@@ -443,8 +520,8 @@ Current coverage:
 ### Test Coverage Includes
 
 - Authentication
-- User CRUD
-- User authentication
+- User registration and CRUD
+- Authentication validation
 - Category CRUD
 - Category validation
 - Expense CRUD
@@ -507,7 +584,7 @@ alembic downgrade -1
 
 Possible future improvements include:
 
-- Docker and Docker Compose support
+- AWS cloud deployment
 - GitHub Actions CI/CD
 - Refresh token implementation
 - Expense analytics and charts
@@ -523,8 +600,7 @@ Possible future improvements include:
 
 **Selvkarthik S**
 
-GitHub:  
-https://github.com/Selvkarthik
+GitHub: [Selvkarthik](https://github.com/Selvkarthik)
 
 ---
 
@@ -537,8 +613,9 @@ JWT + OAuth2
 bcrypt password hashing
 User-level authorization
 Expense & Budget business logic
+Docker + Docker Compose
 59 automated tests
 98% code coverage
 ```
 
-Built as a backend-focused project to practice designing, implementing, securing, and testing a production-style REST API.
+Built as a backend-focused project to practice designing, implementing, securing, testing, and containerizing a production-style REST API.

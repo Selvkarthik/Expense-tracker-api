@@ -6,4 +6,12 @@ FastApi.txt
 *.pyc
 .idea/
 .vscode/
+.venv
+env
 .coverage
+htmlcov
+.git
+.gitignore
+tests
+README.md
+FastApi.txt
